@@ -69,6 +69,13 @@ function xban.get_info(player) --> ip_name_list, banned, last_record
 	return e.names, e.banned, e.record[#e.record]
 end
 
+function xban.add_record(player, record)
+   -- Add records for other punishments banned.
+   local e = xban.find_entry(player, true)
+   table.insert(e.record, record)
+end
+
+
 function xban.ban_player(player, source, expires, reason) --> bool, err
 	if xban.get_whitelist(player) then
 		return nil, "Player is whitelisted; remove from whitelist first"
@@ -82,6 +89,7 @@ function xban.ban_player(player, source, expires, reason) --> bool, err
 		time = os.time(),
 		expires = expires,
 		reason = reason,
+		type = "ban",
 	}
 	table.insert(e.record, rec)
 	e.names[player] = true
@@ -124,6 +132,7 @@ function xban.unban_player(player, source) --> bool, err
 		source = source,
 		time = os.time(),
 		reason = "Unbanned",
+		type = "unban"
 	}
 	table.insert(e.record, rec)
 	e.banned = false
@@ -166,7 +175,8 @@ function xban.get_record(player)
 	end
 	local record = { }
 	for _, rec in ipairs(e.record) do
-		local msg = rec.reason or "No reason given."
+		local msg = rec.type or "ban"
+		msg = msg .. ": " .. rec.reason or "No reason given."
 		if rec.expires then
 			msg = msg..(", Expires: %s"):format(os.date("%c", e.expires))
 		end
