@@ -47,9 +47,9 @@ up. For example, `1Y3M3D7h` will ban for 1 year, 3 months, 3 days and 7 hours.
 
 Unbans a player.
 
-**Usage:** `/xunban <player_or_ip>`
+**Usage:** `/xunban <player_or_ip> <reason>`
 
-**Example:** `/xunban Joe`
+**Example:** `/xunban Joe has promised not to grief again`
 
 ### `xban_record`
 

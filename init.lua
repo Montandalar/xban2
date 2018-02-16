@@ -123,7 +123,7 @@ function xban.ban_player(player, source, expires, reason) --> bool, err
 	return true
 end
 
-function xban.unban_player(player, source) --> bool, err
+function xban.unban_player(player, source, reason) --> bool, err
 	local e = xban.find_entry(player)
 	if not e then
 		return nil, "No such entry"
@@ -131,7 +131,7 @@ function xban.unban_player(player, source) --> bool, err
 	local rec = {
 		source = source,
 		time = os.time(),
-		reason = "Unbanned",
+		reason = (reason or ""),
 		type = "unban"
 	}
 	table.insert(e.record, rec)
@@ -260,16 +260,16 @@ minetest.register_chatcommand("xtempban", {
 
 minetest.register_chatcommand("xunban", {
 	description = "XUnBan a player",
-	params = "<player_or_ip>",
+	params = "<player_or_ip> <reason>",
 	privs = { ban=true },
 	func = function(name, params)
-		local plname = params:match("%S+")
+		local plname, reason = params:match("(%S+)%s+(.+)")
 		if not plname then
 			minetest.chat_send_player(name,
 			  "Usage: /xunban <player_or_ip>")
 			return
 		end
-		local ok, e = xban.unban_player(plname, name)
+		local ok, e = xban.unban_player(plname, name, reason)
 		return ok, ok and ("Unbanned %s."):format(plname) or e
 	end,
 })

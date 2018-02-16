@@ -29,11 +29,13 @@ Each entry contains following fields:
 			reason = "qwerty",
 			time = 12341234,
 			expires = 43214321,
+			type = "ban"
 		},
 		[1] = {
 			source = "asdf",
 			reason = "Unbanned",  -- When unbanned
 			time = 12341234,
+			type = "unban"
 		},
 	},
 }
