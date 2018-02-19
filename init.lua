@@ -75,6 +75,16 @@ function xban.add_record(player, record)
    table.insert(e.record, record)
 end
 
+function xban.add_property(player, property, value)
+   -- adds a property to a player, for instance a "jailed" property which indicates that a player is jailed
+   local e = xban.find_entry(player, true)
+   e[property] = value
+end
+function xban.get_property(player, property)
+   local e = xban.find_entry(player, true)
+   return e[property] 
+end
+
 
 function xban.ban_player(player, source, expires, reason) --> bool, err
 	if xban.get_whitelist(player) then
