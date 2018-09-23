@@ -107,7 +107,7 @@ function xban.ban_player(player, source, expires, reason) --> bool, err
 	if pl then
 		local ip = minetest.get_player_ip(player)
 		if ip then
-			e.names[ip] = true
+			e.names[ip] = os.time()
 		end
 		e.last_pos = pl:getpos()
 	end
@@ -193,7 +193,7 @@ function xban.get_record(player)
 		if rec.source then
 			msg = msg..", Source: "..rec.source
 		end
-		table.insert(record, ("[%s]: %s"):format(os.date("%c", e.time), msg))
+		table.insert(record, ("[%s]: %s"):format(os.date("%Y-%m-%d %H:%M:%S", rec.time), msg))
 	end
 	local last_pos
 	if e.last_pos then
@@ -229,7 +229,7 @@ minetest.register_on_joinplayer(function(player)
 	end
 	e.names[name] = true
 	if ip then
-		e.names[ip] = true
+		e.names[ip] = os.time()
 	end
 	e.last_seen = os.time()
 end)
@@ -267,6 +267,29 @@ minetest.register_chatcommand("xtempban", {
 				plname, os.date("%c", expires)) or e)
 	end,
 })
+
+minetest.register_chatcommand("xnote", {
+	description = "Add a note to a player's criminal record",
+	params = "<player> <note>",
+	privs = { kick=true },
+	func = function(name, params)
+		local plname, note = params:match("(%S+)%s+(.+)")
+		if not (plname and note) then
+			return false, "Usage: /xnote <player> <note>"
+		end
+		local record = {
+			source = name,
+			time = os.time(),
+			expires = nil,
+			reason = note,
+			type = "note",
+		}
+		xban.add_record(plname, record)
+		return true, ("Added note for %s."):format(plname)
+	end,
+})
+
+			      
 
 minetest.register_chatcommand("xunban", {
 	description = "XUnBan a player",
