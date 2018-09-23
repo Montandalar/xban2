@@ -193,7 +193,7 @@ function xban.get_record(player)
 		if rec.source then
 			msg = msg..", Source: "..rec.source
 		end
-		table.insert(record, ("[%s]: %s"):format(os.date("%c", e.time), msg))
+		table.insert(record, ("[%s]: %s"):format(os.date("%Y-%m-%d %H:%M:%S", rec.time), msg))
 	end
 	local last_pos
 	if e.last_pos then
