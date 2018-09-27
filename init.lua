@@ -176,6 +176,20 @@ function xban.add_whitelist(name_or_ip, source)
 	return true
 end
 
+function xban.get_alt_accounts(player)
+    local e = xban.find_entry(player)
+    local names = {}
+    if not e then
+		return nil, ("No entry for `%s'"):format(player)
+    end
+    for name in pairs(e.names) do
+		if not string.match(name, "%.") and name ~= player then
+			table.insert(names, name)
+		end
+    end
+    return names
+end
+
 function xban.get_record(player)
 	local e = xban.find_entry(player)
 	if not e then
@@ -200,6 +214,7 @@ function xban.get_record(player)
 		last_pos = ("User was last seen at %s"):format(
 		  minetest.pos_to_string(e.last_pos))
 	end
+
 	return record, last_pos
 end
 
@@ -325,6 +340,10 @@ minetest.register_chatcommand("xban_record", {
 		for _, e in ipairs(record) do
 			minetest.chat_send_player(name, "[xban] "..e)
 		end
+		local alt_accounts = xban.get_alt_accounts(plname)
+		local msg = "Alt accounts: "
+		msg = msg .. table.concat(alt_accounts, ", ")
+		minetest.chat_send_player(name, "[xban] "..msg)
 		if last_pos then
 			minetest.chat_send_player(name, "[xban] "..last_pos)
 		end
