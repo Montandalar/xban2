@@ -202,7 +202,7 @@ function xban.get_record(player)
 		local msg = rec.type or "ban"
 		msg = msg .. ": " .. rec.reason or "No reason given."
 		if rec.expires then
-			msg = msg..(", Expires: %s"):format(os.date("%c", e.expires))
+			msg = msg..(", Expires: %s"):format(os.date("%Y-%m-%d %H:%M:%S", rec.expires))
 		end
 		if rec.source then
 			msg = msg..", Source: "..rec.source
