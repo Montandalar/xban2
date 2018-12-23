@@ -43,7 +43,7 @@ local function get_record_simple(name)
 	end
 	local record = { }
 	for _, rec in ipairs(e.record) do
-		local msg = (os.date("%Y-%m-%d %H:%M:%S", rec.time).." | " .. (rec.type or ban).." | "
+		local msg = (os.date("%Y-%m-%d %H:%M:%S", rec.time).." | " .. (rec.type or "ban").." | "
 				..(rec.reason or "No reason given."))
 		table.insert(record, msg)
 	end
