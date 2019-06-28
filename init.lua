@@ -1,4 +1,3 @@
-
 xban = { MP = minetest.get_modpath(minetest.get_current_modname()) }
 
 dofile(xban.MP.."/serialize.lua")
@@ -8,6 +7,8 @@ local tempbans = { }
 
 local DEF_SAVE_INTERVAL = 300 -- 5 minutes
 local DEF_DB_FILENAME = minetest.get_worldpath().."/xban.db"
+local CLEAN_IP_SECONDS = 24*60*60*7 -- time after which innocent player IPs should get removed
+local CLEAN_INTERVAL = 3600 -- interval at which the db should be purged of old IPs
 
 local DB_FILENAME = minetest.settings:get("xban.db_filename")
 local SAVE_INTERVAL = tonumber(
@@ -38,6 +39,11 @@ local function parse_time(t) --> secs
 		secs = secs + (tonumber(num) * (unit_to_secs[unit] or 1))
 	end
 	return secs
+end
+
+function xban.is_ip(name)
+	-- checks if name is an ipv4 or ipv6 address
+	return string.match(name, "%.") or string.match(name, "%:")
 end
 
 function xban.find_entry(player, create) --> entry, index
@@ -177,17 +183,17 @@ function xban.add_whitelist(name_or_ip, source)
 end
 
 function xban.get_alt_accounts(player)
-    local e = xban.find_entry(player)
-    local names = {}
-    if not e then
+	local e = xban.find_entry(player)
+	local names = {}
+	if not e then
 		return nil, ("No entry for `%s'"):format(player)
-    end
-    for name in pairs(e.names) do
-		if not string.match(name, "%.") and name ~= player then
+	end
+	for name in pairs(e.names) do
+		if not xban.is_ip(name) and name ~= player then
 			table.insert(names, name)
 		end
-    end
-    return names
+	end
+	return names
 end
 
 function xban.get_record(player)
@@ -304,6 +310,28 @@ minetest.register_chatcommand("xnote", {
 	end,
 })
 
+minetest.register_chatcommand("xkick", {
+	description = "Kicks a player",
+	params = "<player> <reason>",
+	privs = { kick=true },
+	func = function(name, params)
+		local plname, note = params:match("(%S+)%s+(.+)")
+		if not (plname and note) then
+			return false, "Usage: /xkick <player> <reason>"
+		end
+		local record = {
+			source = name,
+			time = os.time(),
+			expires = nil,
+			reason = note,
+			type = "kick",
+		}
+		xban.add_record(plname, record)
+		minetest.kick_player(plname)		
+		return true, ("Kicked %s."):format(plname)
+	end,
+})
+
 			      
 
 minetest.register_chatcommand("xunban", {
@@ -325,27 +353,31 @@ minetest.register_chatcommand("xunban", {
 minetest.register_chatcommand("xban_record", {
 	description = "Show the ban records of a player",
 	params = "<player_or_ip>",
-	privs = { ban=true },
+	privs = { kick=true },
 	func = function(name, params)
 		local plname = params:match("%S+")
 		if not plname then
 			return false, "Usage: /xban_record <player_or_ip>"
 		end
 		local record, last_pos = xban.get_record(plname)
+		local alt_accounts = xban.get_alt_accounts(plname)
+		local msg 
+		if alt_accounts then
+			msg = "Alt accounts: " .. table.concat(alt_accounts, ", ")
+		end
 		if not record then
 			local err = last_pos
 			minetest.chat_send_player(name, "[xban] "..err)
-			return
+		else
+			for _, e in ipairs(record) do
+				minetest.chat_send_player(name, "[xban] "..e)
+			end
+			if last_pos then
+				minetest.chat_send_player(name, "[xban] "..last_pos)
+			end
 		end
-		for _, e in ipairs(record) do
-			minetest.chat_send_player(name, "[xban] "..e)
-		end
-		local alt_accounts = xban.get_alt_accounts(plname)
-		local msg = "Alt accounts: "
-		msg = msg .. table.concat(alt_accounts, ", ")
-		minetest.chat_send_player(name, "[xban] "..msg)
-		if last_pos then
-			minetest.chat_send_player(name, "[xban] "..last_pos)
+		if msg then
+			minetest.chat_send_player(name, "[xban] "..msg)
 		end
 		return true, "Record listed."
 	end,
@@ -376,10 +408,33 @@ minetest.register_chatcommand("xban_wl", {
 	end,
 })
 
+local function clean_db()
+	-- Removes old IP addresses for data protection and false positive
+	-- prevention
+	local cutoff = os.time() - CLEAN_IP_SECONDS
+	local cleaned = 0
+	for _,entry in ipairs(db) do
+		if not entry.banned then
+			-- only remove innocent player's ip addresses, rest can be
+			-- kept to ensure server security
+			for name, time in pairs(entry.names) do				
+				if xban.is_ip(name) and (time == true or time < cutoff ) then
+					entry.names[name] = nil
+					cleaned = cleaned + 1
+				end
+			end
+		end
+	end
+	ACTION("Cleaned %d old IP addresses.", cleaned)
+end
 local function check_temp_bans()
 	minetest.after(60, check_temp_bans)
 	local to_rm = { }
 	local now = os.time()
+	if not db.nextclean or db.nextclean < now then
+		clean_db()
+		db.nextclean = now + CLEAN_INTERVAL
+	end
 	for i, e in ipairs(tempbans) do
 		if e.expires and (e.expires <= now) then
 			table.insert(to_rm, i)
@@ -393,6 +448,7 @@ local function check_temp_bans()
 		table.remove(tempbans, i)
 	end
 end
+
 
 local function save_db()
 	minetest.after(SAVE_INTERVAL, save_db)

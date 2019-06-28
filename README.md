@@ -51,6 +51,18 @@ Unbans a player.
 
 **Example:** `/xunban Joe has promised not to grief again`
 
+### `xnote`
+
+Adds a note to a player's record
+
+**Usage:** `/xnote <player_or_ip> <note>`
+
+**Example:** `/xunban Joe has behaved suspiciously
+
+### `xkick`
+
+Same as `xban`, only that it kicks the player instead of banning.`
+
 ### `xban_record`
 
 Shows the ban record on chat.
