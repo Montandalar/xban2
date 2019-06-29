@@ -181,9 +181,8 @@ function xban.add_whitelist(name_or_ip, source)
 	}
 	return true
 end
-
-function xban.get_alt_accounts(player)
-	local e = xban.find_entry(player)
+function xban.get_account_names(e)
+	-- get accounts associated with entry
 	local names = {}
 	if not e then
 		return nil, ("No entry for `%s'"):format(player)
@@ -194,6 +193,11 @@ function xban.get_alt_accounts(player)
 		end
 	end
 	return names
+end
+
+function xban.get_alt_accounts(player)
+	local e = xban.find_entry(player)
+	return xban.get_account_names(e)
 end
 
 function xban.get_record(player)
@@ -408,6 +412,7 @@ minetest.register_chatcommand("xban_wl", {
 	end,
 })
 
+
 local function clean_db()
 	-- Removes old IP addresses for data protection and false positive
 	-- prevention
@@ -427,6 +432,7 @@ local function clean_db()
 	end
 	ACTION("Cleaned %d old IP addresses.", cleaned)
 end
+
 local function check_temp_bans()
 	minetest.after(60, check_temp_bans)
 	local to_rm = { }
@@ -491,6 +497,34 @@ local function load_db()
 		end
 	end
 end
+
+local function has_alt_accounts (e)
+	local a = xban.get_account_names(e)
+	return a and #a > 1
+end
+
+minetest.register_chatcommand("xban_cleanup", {
+	description = "Removes all uninteresting entries from the xban db",
+	privs = { server=true },
+	func = function(name, params)
+		local old_count = #db
+
+		local i = 1
+		while i <= #db do
+			if #db[i].record == 0 and not has_alt_accounts(db[i]) then
+				-- not banned, remove from db
+				table.remove(db, i)
+			else
+				-- banned, hold entry back
+				i = i + 1
+			end
+		end
+
+		-- save immediately
+		save_db()
+		return true, "Removed " .. (old_count - #db) .. " entries, new db entry-count: " .. #db
+	end,
+})
 
 minetest.register_on_shutdown(save_db)
 minetest.after(SAVE_INTERVAL, save_db)
