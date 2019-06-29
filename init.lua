@@ -181,7 +181,7 @@ function xban.add_whitelist(name_or_ip, source)
 	}
 	return true
 end
-function xban.get_account_names(e)
+function xban.get_account_names(e, player)
 	-- get accounts associated with entry
 	local names = {}
 	if not e then
@@ -196,8 +196,8 @@ function xban.get_account_names(e)
 end
 
 function xban.get_alt_accounts(player)
-	local e = xban.find_entry(player)
-	return xban.get_account_names(e)
+	local e = xban.find_entry(player)	
+	return xban.get_account_names(e, player)
 end
 
 function xban.get_record(player)
