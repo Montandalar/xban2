@@ -196,7 +196,7 @@ function xban.get_account_names(e, player)
 end
 
 function xban.get_alt_accounts(player)
-	local e = xban.find_entry(player)	
+	local e = xban.find_entry(player)
 	return xban.get_account_names(e, player)
 end
 
@@ -418,19 +418,30 @@ local function clean_db()
 	-- prevention
 	local cutoff = os.time() - CLEAN_IP_SECONDS
 	local cleaned = 0
-	for _,entry in ipairs(db) do
+	local removed = 0
+	for i,entry in ipairs(db) do
 		if not entry.banned then
 			-- only remove innocent player's ip addresses, rest can be
 			-- kept to ensure server security
-			for name, time in pairs(entry.names) do				
-				if xban.is_ip(name) and (time == true or time < cutoff ) then
-					entry.names[name] = nil
+			local namecount = 0
+			for name, time in pairs(entry.names) do
+				if xban.is_ip(name) and (time == true or time < cutoff) then
+					db[i].names[name] = nil
 					cleaned = cleaned + 1
+				else
+					namecount = namecount + 1
 				end
+			end
+			if #entry.record == 0 and namecount < 2 then
+				-- entry with no useful information whatsoever, will be
+				-- recreated in the same way on next login of the player
+				table.remove(db,i)
+				removed = removed + 1
 			end
 		end
 	end
 	ACTION("Cleaned %d old IP addresses.", cleaned)
+	ACTION("Cleaned %d uninteresting old records.", removed)
 end
 
 local function check_temp_bans()
@@ -503,28 +514,6 @@ local function has_alt_accounts (e)
 	return a and #a > 1
 end
 
-minetest.register_chatcommand("xban_cleanup", {
-	description = "Removes all uninteresting entries from the xban db",
-	privs = { server=true },
-	func = function(name, params)
-		local old_count = #db
-
-		local i = 1
-		while i <= #db do
-			if #db[i].record == 0 and not has_alt_accounts(db[i]) then
-				-- not banned, remove from db
-				table.remove(db, i)
-			else
-				-- banned, hold entry back
-				i = i + 1
-			end
-		end
-
-		-- save immediately
-		save_db()
-		return true, "Removed " .. (old_count - #db) .. " entries, new db entry-count: " .. #db
-	end,
-})
 
 minetest.register_on_shutdown(save_db)
 minetest.after(SAVE_INTERVAL, save_db)
