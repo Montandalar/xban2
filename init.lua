@@ -354,7 +354,7 @@ minetest.register_chatcommand("xunban", {
 	end,
 })
 
-minetest.register_chatcommand("xban_record", {
+local xr = {
 	description = "Show the ban records of a player",
 	params = "<player_or_ip>",
 	privs = { kick=true },
@@ -385,6 +385,19 @@ minetest.register_chatcommand("xban_record", {
 		end
 		return true, "Record listed."
 	end,
+}
+
+minetest.register_chatcommand("xban_record", xr)
+minetest.register_chatcommand("xr", xr)
+
+minetest.register_chatcommand("serverpass", {
+	description = "set a server password",
+	params = "<password>",
+	privs = { kick=true },
+	func = function(name,param)
+		minetest.settings:set("default_password", param)
+		minetest.chat_send_player(name, "Changed server password to \""..param.."\".")
+	end
 })
 
 minetest.register_chatcommand("xban_wl", {
