@@ -239,6 +239,15 @@ minetest.register_on_prejoinplayer(function(name, ip)
 		return ("Banned: Expires: %s, Reason: %s"):format(
 		  date, e.reason)
 	end
+	if minetest.settings:get("moderate_new_accounts") and not minetest.player_exists(name) then
+		local players = minetest.get_connected_players()
+		for i=1,#players do
+			if minetest.check_player_privs(players[i]:get_player_name(), {kick = true}) then
+				return
+			end
+		end
+		return "No new accounts are allowed while there is no moderator online. Please try rejoining later!"
+	end
 end)
 
 minetest.register_on_joinplayer(function(player)
