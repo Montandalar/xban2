@@ -242,7 +242,7 @@ minetest.register_on_prejoinplayer(function(name, ip)
 	if minetest.settings:get("moderate_new_accounts") and not minetest.player_exists(name) then
 		local players = minetest.get_connected_players()
 		for i=1,#players do
-			if minetest.check_player_privs(players[i]:get_player_name(), {kick = true}) then
+			if minetest.check_player_privs(players[i]:get_player_name(), {ban = true}) then
 				return
 			end
 		end
