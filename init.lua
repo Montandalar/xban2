@@ -250,6 +250,17 @@ minetest.register_on_prejoinplayer(function(name, ip)
 	end
 end)
 
+minetest.register_on_newplayer(function(player)
+		local players = minetest.get_connected_players()
+		local pname = player:get_player_name()
+		for i=1,#players do
+			local name = players[i]:get_player_name()
+			if minetest.check_player_privs(name, {ban = true}) or minetest.check_player_privs(name, {kick = true}) then
+				minetest.chat_send_player(name, "*** xban: New player "..pname.." joined the game")
+			end
+		end
+end)
+
 minetest.register_on_joinplayer(function(player)
 	local name = player:get_player_name()
 	local e = xban.find_entry(name)
