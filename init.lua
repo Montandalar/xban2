@@ -228,21 +228,21 @@ function xban.get_record(player)
 	return record, last_pos
 end
 
-xban.afk = {}
+xban.present = {}
 
 minetest.register_chatcommand("mod_afk", {
 	description = "Set afk",
 	params = "<on|off>",
 	privs = { kick=true },
 	func = function(name, params)
-		local afk = not xban.afk[name]
+		local present = not xban.present[name]
 		if params == "on" then
-			afk = true
+			present = nil
 		elseif params == "off" then
-			afk = nil 
+			present = true 
 		end
-		xban.afk[name] = afk
-		if afk then
+		xban.present[name] = present
+		if not present then
 			minetest.chat_send_player(name, "you are now afk")
 		else
 			minetest.chat_send_player(name, "you are no longer afk")
@@ -257,9 +257,13 @@ minetest.register_chatcommand("is_afk", {
 	privs = { kick=true },
 	func = function(name, params)
 		local players = minetest:get_connected_players()
+		if params == "" then
+			minetest.chat_send_player(name, "You are"..(xban.present[name] and " not" or "").." afk")
+			return true
+		end
 		for i=1,#players do
 			if players[i]:get_player_name() == params then
-				minetest.chat_send_player(name, "Player "..params.." is"..(xban.afk[params] and "" or " not").." afk")
+				minetest.chat_send_player(name, "Player "..params.." is"..(xban.present[params] and " not" or "").." afk")
 				return true
 			end
 		end
@@ -282,7 +286,7 @@ minetest.register_on_prejoinplayer(function(name, ip)
 		local players = minetest.get_connected_players()
 		for i=1,#players do
 			local pname = players[i]:get_player_name()
-			if minetest.check_player_privs(pname, {ban = true}) and not xban.afk[pname] then
+			if minetest.check_player_privs(pname, {ban = true}) and xban.present[pname] then
 				return
 			end
 		end
